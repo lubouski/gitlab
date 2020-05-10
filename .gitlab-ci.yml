@@ -1,0 +1,11 @@
+image: google/cloud-sdk:alpine
+
+before_script:
+  - gcloud version
+
+build:
+  stage: build
+  script:
+    - gcloud auth activate-service-account --key-file terraform-ca-key.json
+    - gsutil -m rsync -r <data-dir> gs://<project_id>-work/<data-dir> 
+
