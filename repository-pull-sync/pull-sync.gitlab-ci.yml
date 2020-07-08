@@ -1,0 +1,42 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+image: alpine
+
+before_script:
+  - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@git.company.com/project/cicd-config-dir
+
+stages:
+  - pull-sync
+
+pull-sync-on-schedule:
+  before_script: []
+  stage: pull-sync
+  image: alpine:latest
+  script:
+    - apk update && apk add git && apk add openssh-client
+    - mkdir ~/.ssh
+    - echo -e "$ID_RSA" | tr -d '\r' > ~/.ssh/id_rsa 
+    - cat ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh && chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H 'company.com' >> ~/.ssh/known_hosts
+    - git config --global user.email "email@company.com"
+    - git config --global user.name "Gitlab Runner"
+    - git remote add upstream https://company.org/project.git
+    - git remote set-url origin git@company.com:project.git
+    - git checkout master
+    - git pull upstream master --no-edit
+    - GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -F /dev/null" git push origin master
+  only:
+    - schedules
+
+
